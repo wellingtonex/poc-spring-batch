@@ -8,3 +8,10 @@ spring:
     platform: mysql
   batch:
     initialize-schema: always
+
+logging:
+  level:
+    org:
+      springframework:
+        jdbc:
+          core: debug

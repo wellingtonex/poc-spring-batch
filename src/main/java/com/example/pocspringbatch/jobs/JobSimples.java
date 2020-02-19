@@ -9,13 +9,21 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.batch.item.database.JdbcPagingItemReader;
+import org.springframework.batch.item.database.PagingQueryProvider;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
+import org.springframework.batch.item.database.builder.JdbcPagingItemReaderBuilder;
+import org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import javax.sql.DataSource;
 import java.math.BigDecimal;
+import java.util.concurrent.Executor;
 
 @Configuration
 public class JobSimples {
@@ -36,6 +44,42 @@ public class JobSimples {
                 .build();
     }
 
+	@Bean
+	public JdbcPagingItemReader<Conta> constaCursorItemReaderPaginatede(DataSource dataSource, PagingQueryProvider queryProvider) {
+		return new JdbcPagingItemReaderBuilder<Conta>()
+				.name("constaCursorItemReaderPaginatede")
+				.dataSource(dataSource)
+				.queryProvider(queryProvider)
+				.pageSize(100)
+				.rowMapper(new ContaRowMapper())
+				.build();
+	}
+
+	@Bean
+	public TaskExecutor asyncExecutor() {
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		executor.setCorePoolSize(5);
+		executor.setMaxPoolSize(15);
+		executor.setQueueCapacity(50);
+		executor.setThreadNamePrefix("POC");
+		executor.initialize();
+		return executor;
+	}
+
+
+	@Bean
+	public SqlPagingQueryProviderFactoryBean pagingQueryProvider(DataSource dataSource) {
+		SqlPagingQueryProviderFactoryBean factoryBean = new SqlPagingQueryProviderFactoryBean();
+
+		factoryBean.setDataSource(dataSource);
+		factoryBean.setSelectClause("select *");
+		factoryBean.setFromClause("from conta");
+//		factoryBean.setWhereClause("where city = :city");
+		factoryBean.setSortKey("id");
+
+		return factoryBean;
+	}
+
     @Bean
 	public ItemWriter<Conta> itemWriter() {
 		return (items) -> items.forEach(conta -> {
@@ -54,10 +98,11 @@ public class JobSimples {
     @Bean
 	public Step simplesStepContas() {
 		return this.stepBuilderFactory.get("simplesStepContas")
-				.<Conta, Conta>chunk(10)
-				.reader(constaCursorItemReader(null))
+				.<Conta, Conta>chunk(100)
+				.reader(constaCursorItemReaderPaginatede(null, null))
 				.processor(itemProcessor())
 				.writer(itemWriter())
+				.taskExecutor(asyncExecutor())
 				.build();
 	}
 
