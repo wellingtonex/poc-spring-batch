@@ -2,6 +2,7 @@ package com.example.pocspringbatch.jobs;
 
 import com.example.pocspringbatch.mappers.ContaRowMapper;
 import com.example.pocspringbatch.models.Conta;
+import lombok.SneakyThrows;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
@@ -17,13 +18,10 @@ import org.springframework.batch.item.database.support.SqlPagingQueryProviderFac
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import javax.sql.DataSource;
-import java.math.BigDecimal;
-import java.util.concurrent.Executor;
 
 @Configuration
 public class JobSimples {
@@ -45,7 +43,9 @@ public class JobSimples {
     }
 
 	@Bean
+	@SneakyThrows
 	public JdbcPagingItemReader<Conta> constaCursorItemReaderPaginatede(DataSource dataSource, PagingQueryProvider queryProvider) {
+		dataSource.getConnection().setSchema("xpto");
 		return new JdbcPagingItemReaderBuilder<Conta>()
 				.name("constaCursorItemReaderPaginatede")
 				.dataSource(dataSource)
@@ -106,7 +106,7 @@ public class JobSimples {
 				.build();
 	}
 
-    @Bean
+    @Bean("jobSimplesContas")
 	public Job job() {
 		return this.jobBuilderFactory.get("jobSimplesContas")
 				.start(simplesStepContas())

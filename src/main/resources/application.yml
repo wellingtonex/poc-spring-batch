@@ -8,6 +8,8 @@ spring:
     platform: mysql
   batch:
     initialize-schema: always
+    job:
+      enabled: false
 
 logging:
   level:
