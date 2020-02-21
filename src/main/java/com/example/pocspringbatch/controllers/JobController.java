@@ -29,7 +29,7 @@ public class JobController {
 
         for (int i = 0; i < quantidade; i++) {
             jdbcTemplate.update(
-                    "insert into conta(saldo, ultima_atualizacao) values (?, ?);",
+                    "insert into conta(saldo, ultimaAtualizacao) values (?, ?);",
                     BigDecimal.valueOf(10).multiply(BigDecimal.valueOf(i)), new Date());
         }
 
